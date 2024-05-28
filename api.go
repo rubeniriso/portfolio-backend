@@ -20,6 +20,7 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
 			utils.BadRequest(w)
+			return
 		}
 	}
 }
@@ -112,7 +113,9 @@ func (s *APIServer) handleDeleteAccountById(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 	if err := s.store.DeleteAccountById(id); err != nil {
-		return utils.DBError(w)
+		utils.DBError(w)
+		return nil
+
 	}
 	return utils.WriteJSON(w, http.StatusOK, map[string]int{"deleted": id})
 }
@@ -123,7 +126,8 @@ func (s *APIServer) handleRestoreAccountById(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	if err := s.store.RestoreAccountById(id); err != nil {
-		return utils.WriteJSON(w, http.StatusConflict, "error in the database")
+		utils.DBError(w)
+		return nil
 	}
 	return utils.WriteJSON(w, http.StatusOK, map[string]int{"restored": id})
 }
@@ -139,13 +143,13 @@ func getID(r *http.Request) (int, error) {
 
 func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("calling JWT auth middleware")
 		tokenString := r.Header.Get("x-jwt-token")
 		token, err := validateJWT(tokenString)
 		if err != nil {
 			utils.PermissionDenied(w)
 			return
 		}
+
 		if !token.Valid {
 			utils.PermissionDenied(w)
 			return
@@ -163,7 +167,7 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 			return
 		}
 		claims := token.Claims.(jwt.MapClaims)
-		if claims["id"] != account.ID {
+		if claims["accountId"] != strconv.Itoa(account.ID) {
 			utils.PermissionDenied(w)
 			return
 		}
