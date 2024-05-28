@@ -8,23 +8,18 @@ import (
 	"os"
 	"strconv"
 
+	utils "github.com/rubeniriso/portfolio-backend/utils"
+
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
-	utils "github.com/rubeniriso/portfolio-backend/utils"
 )
-
-// func utils.WriteJSON(w http.ResponseWriter, status int, v any) error {
-// 	w.Header().Set("Content-Type", "application/json")
-// 	w.WriteHeader(status)
-// 	return json.NewEncoder(w).Encode(v)
-// }
 
 type apiFunc func(http.ResponseWriter, *http.Request) error
 
 func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := f(w, r); err != nil {
-			utils.WriteJSON(w, http.StatusOK, "hello")
+			utils.BadRequest(w)
 		}
 	}
 }
@@ -85,14 +80,14 @@ func (s *APIServer) handleGetAccountById(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		return err
 	}
-	return jsonUtils.WriteJSON(w, http.StatusOK, account)
+	return utils.WriteJSON(w, http.StatusOK, account)
 }
 func (s *APIServer) handleGetAccounts(w http.ResponseWriter) error {
 	accounts, err := s.store.GetAccounts()
 	if err != nil {
 		return err
 	}
-	return jsonUtils.WriteJSON(w, http.StatusOK, accounts)
+	return utils.WriteJSON(w, http.StatusOK, accounts)
 }
 func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) error {
 	createAccountReq := new(CreateAccountRequest)
@@ -108,7 +103,7 @@ func (s *APIServer) handleCreateAccount(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 	fmt.Println(tokenString)
-	return jsonUtils.WriteJSON(w, http.StatusOK, createAccountReq)
+	return utils.WriteJSON(w, http.StatusOK, createAccountReq)
 }
 
 func (s *APIServer) handleDeleteAccountById(w http.ResponseWriter, r *http.Request) error {
@@ -117,9 +112,9 @@ func (s *APIServer) handleDeleteAccountById(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 	if err := s.store.DeleteAccountById(id); err != nil {
-		return jsonUtils.WriteJSON(w, http.StatusConflict, "error in the database")
+		return utils.DBError(w)
 	}
-	return jsonUtils.WriteJSON(w, http.StatusOK, map[string]int{"deleted": id})
+	return utils.WriteJSON(w, http.StatusOK, map[string]int{"deleted": id})
 }
 
 func (s *APIServer) handleRestoreAccountById(w http.ResponseWriter, r *http.Request) error {
@@ -128,9 +123,9 @@ func (s *APIServer) handleRestoreAccountById(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 	if err := s.store.RestoreAccountById(id); err != nil {
-		return jsonUtils.WriteJSON(w, http.StatusConflict, "error in the database")
+		return utils.WriteJSON(w, http.StatusConflict, "error in the database")
 	}
-	return jsonUtils.WriteJSON(w, http.StatusOK, map[string]int{"restored": id})
+	return utils.WriteJSON(w, http.StatusOK, map[string]int{"restored": id})
 }
 
 func getID(r *http.Request) (int, error) {
@@ -148,29 +143,30 @@ func withJWTAuth(handlerFunc http.HandlerFunc, s Storage) http.HandlerFunc {
 		tokenString := r.Header.Get("x-jwt-token")
 		token, err := validateJWT(tokenString)
 		if err != nil {
-			//jsonUtils.WriteJSON(w, http.StatusForbidden, ApiError{Error: "permission denied"})
+			utils.PermissionDenied(w)
 			return
 		}
 		if !token.Valid {
-			//jsonUtils.WriteJSON(w, http.StatusForbidden, ApiError{Error: "permission denied"})
+			utils.PermissionDenied(w)
 			return
 		}
 
 		idStr := mux.Vars(r)["id"]
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			//jsonUtils.WriteJSON(w, http.StatusForbidden, ApiError{Error: "permission denied"})
+			utils.PermissionDenied(w)
 			return
 		}
 		account, err := s.GetAccountById(id)
-
-		claims := token.Claims.(jwt.MapClaims)
-		if claims["id"] != account.ID {
-			//jsonUtils.WriteJSON(w, http.StatusForbidden, ApiError{Error: "permission denied"})
+		if err != nil {
+			utils.PermissionDenied(w)
 			return
 		}
-
-		fmt.Println(claims)
+		claims := token.Claims.(jwt.MapClaims)
+		if claims["id"] != account.ID {
+			utils.PermissionDenied(w)
+			return
+		}
 		handlerFunc(w, r)
 	}
 }
