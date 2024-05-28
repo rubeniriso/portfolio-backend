@@ -10,19 +10,11 @@ type Account struct {
 	LastName  string    `json:"lastName"`
 	Password  string    `json:"password"`
 	CreatedAt time.Time `json:"createdAt"`
+	Deleted   bool      `json:"deleted"`
 }
 
 type CreateAccountRequest struct {
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Password  string `json:"password"`
-}
-
-func NewAccount(firstName, lastName, password string) *Account {
-	return &Account{
-		FirstName: firstName,
-		LastName:  lastName,
-		Password:  password,
-		CreatedAt: time.Now().UTC(),
-	}
 }

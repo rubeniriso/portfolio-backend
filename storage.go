@@ -9,7 +9,8 @@ import (
 
 type Storage interface {
 	CreateAccount(*CreateAccountRequest) error
-	DeleteAccount(int) error
+	DeleteAccountById(int) error
+	RestoreAccountById(int) error
 	UpdateAccount(*Account) error
 	GetAccountById(int) (*Account, error)
 	GetAccounts() ([]*Account, error)
@@ -43,7 +44,8 @@ func (s *PostgresStore) createAccountTable() error {
 		first_name varchar(50),
 		last_name varchar(50),
 		password varchar(50),
-		created_at timestamp default CURRENT_TIMESTAMP
+		created_at timestamp default CURRENT_TIMESTAMP,
+		deleted boolean
 	)`
 
 	_, err := s.db.Exec(query)
@@ -67,8 +69,18 @@ func (s *PostgresStore) UpdateAccount(*Account) error {
 	return nil
 }
 
-func (s *PostgresStore) DeleteAccount(id int) error {
-	query := `DELETE FROM account
+func (s *PostgresStore) DeleteAccountById(id int) error {
+	query := `UPDATE account
+		SET deleted = true
+		WHERE id = $1
+	`
+	_, err := s.db.Query(query, id)
+	return err
+}
+
+func (s *PostgresStore) RestoreAccountById(id int) error {
+	query := `UPDATE account
+		SET deleted = false
 		WHERE id = $1
 	`
 	_, err := s.db.Query(query, id)
@@ -77,7 +89,13 @@ func (s *PostgresStore) DeleteAccount(id int) error {
 
 func (s *PostgresStore) GetAccountById(id int) (*Account, error) {
 	query := `
-		SELECT * FROM account
+		SELECT 
+			id, 
+			first_name,
+			last_name,
+			created_at,
+			deleted 
+		FROM account
 		WHERE id = $1
 	`
 	rows, err := s.db.Query(query, id)
@@ -92,7 +110,15 @@ func (s *PostgresStore) GetAccountById(id int) (*Account, error) {
 }
 
 func (s *PostgresStore) GetAccounts() ([]*Account, error) {
-	rows, err := s.db.Query(`SELECT * FROM account`)
+	rows, err := s.db.Query(`
+		SELECT 
+			id, 
+			first_name,
+			last_name,
+			created_at,
+			deleted 
+		FROM account 
+		WHERE deleted = false`)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +140,7 @@ func scanIntoAccount(rows *sql.Rows) (*Account, error) {
 		&account.ID,
 		&account.FirstName,
 		&account.LastName,
-		&account.Password,
-		&account.CreatedAt)
+		&account.CreatedAt,
+		&account.Deleted)
 	return account, err
 }
