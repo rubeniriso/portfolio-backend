@@ -8,7 +8,6 @@ type Account struct {
 	ID        int       `json:"id"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
-	Password  string    `json:"password"`
 	CreatedAt time.Time `json:"createdAt"`
 	Deleted   bool      `json:"deleted"`
 }
