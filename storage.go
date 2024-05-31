@@ -39,14 +39,74 @@ func (s *PostgresStore) Init() error {
 }
 
 func (s *PostgresStore) createAccountTable() error {
-	query := `CREATE TABLE IF NOT EXISTS account  (
-		id serial primary key,
-		first_name varchar(50),
-		last_name varchar(50),
-		password varchar(50),
-		created_at timestamp default CURRENT_TIMESTAMP,
-		deleted boolean
-	)`
+	query := `
+		CREATE TABLE IF NOT EXISTS account  (
+			id serial primary key,
+			first_name varchar(50),
+			last_name varchar(50),
+			password varchar(50),
+			created_at timestamp default CURRENT_TIMESTAMP,
+			deleted boolean
+		)
+
+		CREATE TABLE IF NOT EXISTS language (
+			id uuid DEFAULT gen_random_uuid(),
+			name VARCHAR NOT NULL,
+			image TEXT NOT NULL,
+		)
+
+		CREATE TABLE IF NOT EXISTS technology (
+			id uuid DEFAULT gen_random_uuid(),
+			name VARCHAR NOT NULL,
+			image TEXT NOT NULL,
+			created_at timestamp default CURRENT_TIMESTAMP,
+			deleted boolean)
+		
+		CREATE TABLE IF NOT EXISTS project (
+			id uuid DEFAULT gen_random_uuid()
+			name VARCHAR NOT NULL,
+			description TEXT NOT NULL,
+			start_date timestamp NOT NULL,
+			end_date timestamp,
+			created_at timestamp default CURRENT_TIMESTAMP,
+			deleted boolean
+		)
+
+		CREATE TABLE IF NOT EXISTS project_technology(
+			id uuid DEFAULT gen_random_uuid()
+			project_id uuid REFERENCES project(id) ON DELETE CASCADE,
+			technology_id uuid REFERENCES technology(id) ON DELETE CASCADE,
+			created_at timestamp default CURRENT_TIMESTAMP,
+			deleted boolean
+		)
+
+		CREATE TABLE IF NOT EXISTS project_language(
+			id uuid DEFAULT gen_random_uuid()
+			project_id uuid REFERENCES project(id) ON DELETE CASCADE,
+			language_id uuid REFERENCES technology(id) ON DELETE CASCADE,
+			created_at timestamp default CURRENT_TIMESTAMP,
+			deleted boolean
+		)
+
+		CREATE TABLE IF NOT EXISTS work_experience(
+			id uuid DEFAULT gen_random_uuid(),
+			company_name varchar NOT NULL,
+			job_title varchar NOT NULL,
+			job_description TEXT NOT NULL,
+			start_date timestamp NOT NULL,
+			end_date timestamp
+		)
+
+		CREATE TABLE IF NOT EXISTS education(
+			id uuid DEFAULT gen_random_uuid(),
+			institution_name VARCHAR NOT NULL,
+			institution_image VARCHAR NOT NULL,
+			studies_name VARCHAR NOT NULL,
+			start_date timestamp NOT NULL,
+			end_date timestamp
+		)
+
+		`
 
 	_, err := s.db.Exec(query)
 	return err

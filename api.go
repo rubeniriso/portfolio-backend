@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	utils "github.com/rubeniriso/portfolio-backend/utils"
+	utils "portfolio-backend/utils"
 
 	jwt "github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"

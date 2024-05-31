@@ -1,4 +1,4 @@
-module github.com/rubeniriso/portfolio-backend
+module portfolio-backend
 
 go 1.21.10
 
