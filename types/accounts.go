@@ -1,4 +1,4 @@
-package main
+package accounts
 
 import (
 	"time"
@@ -6,6 +6,7 @@ import (
 
 type Account struct {
 	ID        int       `json:"id"`
+	Email     string    `json:"email"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -13,6 +14,7 @@ type Account struct {
 }
 
 type CreateAccountRequest struct {
+	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
 	Password  string `json:"password"`
